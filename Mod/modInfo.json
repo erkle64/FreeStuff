@@ -1,0 +1,11 @@
+{
+  "identifier": "erkle64.FreeStuff",
+  "displayName": "FreeStuff",
+  "assetBundles": [
+    "freestuff.bundle"
+  ],
+  "assemblies": [
+    "FreeStuff.dll"
+  ]
+}
+
