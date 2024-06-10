@@ -17,13 +17,20 @@ namespace FreeStuff
             MODNAME = "FreeStuff",
             AUTHOR = "erkle64",
             GUID = AUTHOR + "." + MODNAME,
-            VERSION = "0.1.0";
+            VERSION = "0.1.1";
 
         public static LogSource log;
 
         private static TypedConfigEntry<int> configCreativeChestRate;
 
         private static Sprite _creativeChestIcon;
+
+        private static bool hasRun_craftingTags;
+        private static bool hasLoaded_craftingTags;
+        private static bool hasRun_recipes;
+        private static bool hasLoaded_recipes;
+
+        private static readonly string[] _creativeRecipeTags = new string[] { "creative_chest" };
 
         private const string creativeChestIdentifier = "_erkle64_creative_chest";
 
@@ -92,49 +99,7 @@ namespace FreeStuff
 
             AssetManager.registerAsset(creativeChest, false);
             AssetManager.registerAsset(creativeChestItem, false);
-
-            var recipeTags = new string[] { "creative_chest" };
-            var done = new HashSet<string>();
-            var creativeRecipes = new List<CraftingRecipe>();
-            foreach (var kv in AssetManager.getAllAssetsOfType<CraftingRecipe>())
-            {
-                var recipe = kv.Value;
-                if (recipe.outputElemental_data.Length == 0 && recipe.output_data.Length == 1)
-                {
-                    if (items.TryGetValue(ItemTemplate.generateStringHash(recipe.output_data[0].identifier), out var item))
-                    {
-                        if (done.Contains(item.identifier)) continue;
-                        done.Add(item.identifier);
-
-                        var creativeRecipe = Object.Instantiate(recipe);
-                        creativeRecipe.modIdentifier = "_erkle64_freestuff";
-                        creativeRecipe.identifier = $"_freestuff_{item.identifier}";
-                        creativeRecipe.name = item.name;
-                        creativeRecipe.icon_identifier = item.icon_identifier;
-                        creativeRecipe.timeMs = 100;
-                        creativeRecipe.tags = recipeTags;
-                        creativeRecipe.input_data = new CraftingRecipe.CraftingRecipeItemInput[0];
-                        creativeRecipe.inputElemental_data = new CraftingRecipe.CraftingRecipeElementalInput[0];
-                        creativeRecipe.output_data = new CraftingRecipe.CraftingRecipeItemInput[]
-                        {
-                            new CraftingRecipe.CraftingRecipeItemInput()
-                            {
-                                identifier = item.identifier,
-                                amount = configCreativeChestRate.Get() / 10,
-                                percentage_str = "1"
-                            }
-                        };
-
-                        creativeRecipes.Add(creativeRecipe);
-                    }
-                }
-            }
-
-            foreach (var recipe in creativeRecipes) AssetManager.registerAsset(recipe, false);
         }
-
-        private static bool hasRun_craftingTags;
-        private static bool hasLoaded_craftingTags;
 
         class InitOnApplicationStartEnumerator : IEnumerable
         {
@@ -167,6 +132,90 @@ namespace FreeStuff
                         ItemTemplateManager.getAllCraftingTags().Add(creativeChestTag.id, creativeChestTag);
                     }
 
+                    if (!hasRun_recipes && hasLoaded_recipes)
+                    {
+                        hasRun_recipes = true;
+
+                        var creativeRecipes = new List<CraftingRecipe>();
+                        var createdRecipesForItem = new HashSet<string>();
+
+                        var items = AssetManager.getAllAssetsOfType<ItemTemplate>();
+                        foreach (var kv in AssetManager.getAllAssetsOfType<CraftingRecipe>())
+                        {
+                            var recipe = kv.Value;
+                            if (recipe.outputElemental_data.Length == 0 && recipe.output_data.Length == 1)
+                            {
+                                if (items.TryGetValue(ItemTemplate.generateStringHash(recipe.output_data[0].identifier), out var item))
+                                {
+                                    if (createdRecipesForItem.Contains(item.identifier)) continue;
+                                    createdRecipesForItem.Add(item.identifier);
+
+                                    AddCreativeRecipe(recipe, item);
+                                }
+                            }
+                        }
+
+                        AddCreativeRecipe(
+                            AssetManager.getAsset<CraftingRecipe>(CraftingRecipe.generateStringHash("_base_firmarlite_sheet_t1")),
+                            AssetManager.getAsset<ItemTemplate>(ItemTemplate.generateStringHash("_base_firmarlite_bar"))
+                            );
+
+                        AddCreativeRecipe(
+                            AssetManager.getAsset<CraftingRecipe>(CraftingRecipe.generateStringHash("_base_ore_xenoferrite")),
+                            AssetManager.getAsset<ItemTemplate>(ItemTemplate.generateStringHash("_base_rubble_xenoferrite"))
+                            );
+
+                        AddCreativeRecipe(
+                            AssetManager.getAsset<CraftingRecipe>(CraftingRecipe.generateStringHash("_base_ore_technum")),
+                            AssetManager.getAsset<ItemTemplate>(ItemTemplate.generateStringHash("_base_rubble_technum"))
+                            );
+
+                        AddCreativeRecipe(
+                            AssetManager.getAsset<CraftingRecipe>(CraftingRecipe.generateStringHash("_base_ore_ignium")),
+                            AssetManager.getAsset<ItemTemplate>(ItemTemplate.generateStringHash("_base_rubble_ignium"))
+                            );
+
+                        AddCreativeRecipe(
+                            AssetManager.getAsset<CraftingRecipe>(CraftingRecipe.generateStringHash("_base_concrete")),
+                            AssetManager.getAsset<ItemTemplate>(ItemTemplate.generateStringHash("_base_ore_mineral_rock"))
+                            );
+
+                        AddCreativeRecipe(
+                            AssetManager.getAsset<CraftingRecipe>(CraftingRecipe.generateStringHash("_base_ore_telluxite")),
+                            AssetManager.getAsset<ItemTemplate>(ItemTemplate.generateStringHash("_base_rubble_telluxite"))
+                            );
+
+                        foreach (var recipe in creativeRecipes)
+                        {
+                            AssetManager.registerAsset(recipe, false);
+                            recipe.onLoad();
+                            recipe.isHiddenInCharacterCraftingFrame = true;
+                        }
+
+                        void AddCreativeRecipe(CraftingRecipe recipe, ItemTemplate item)
+                        {
+                            var creativeRecipe = Object.Instantiate(recipe);
+                            creativeRecipe.modIdentifier = "_erkle64_freestuff";
+                            creativeRecipe.identifier = $"_freestuff_{item.identifier}";
+                            creativeRecipe.name = item.name;
+                            creativeRecipe.icon_identifier = item.icon_identifier;
+                            creativeRecipe.timeMs = 100;
+                            creativeRecipe.tags = _creativeRecipeTags;
+                            creativeRecipe.input_data = new CraftingRecipe.CraftingRecipeItemInput[0];
+                            creativeRecipe.inputElemental_data = new CraftingRecipe.CraftingRecipeElementalInput[0];
+                            creativeRecipe.output_data = new CraftingRecipe.CraftingRecipeItemInput[] {
+                                new CraftingRecipe.CraftingRecipeItemInput()
+                                {
+                                    identifier = item.identifier,
+                                    amount = configCreativeChestRate.Get() / 10,
+                                    percentage_str = "1"
+                                }
+                            };
+
+                            creativeRecipes.Add(creativeRecipe);
+                        }
+                    }
+
                     yield return enumerated;
                 }
             }
@@ -187,10 +236,7 @@ namespace FreeStuff
             [HarmonyPostfix]
             public static void CraftingRecipe_onLoad(CraftingRecipe __instance)
             {
-                if (__instance.modIdentifier == "_erkle64_freestuff")
-                {
-                    __instance.isHiddenInCharacterCraftingFrame = true;
-                }
+                hasLoaded_recipes = true;
             }
 
             [HarmonyPatch(typeof(CraftingTag), nameof(CraftingTag.onLoad))]
@@ -212,6 +258,7 @@ namespace FreeStuff
 
             [HarmonyPatch(typeof(ItemTemplateManager), nameof(ItemTemplateManager.InitOnApplicationStart))]
             [HarmonyPostfix]
+            [HarmonyPriority(Priority.Last)]
             static void onItemTemplateManagerInitOnApplicationStart(ref IEnumerator __result)
             {
                 var myEnumerator = new InitOnApplicationStartEnumerator(__result);
