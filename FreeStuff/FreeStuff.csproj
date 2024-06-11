@@ -33,6 +33,12 @@
     <Reference Include="UnityEngine.InputModule">
       <HintPath>$(FoundryAssembliesPath)UnityEngine.InputModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(FoundryAssembliesPath)UnityEngine.ParticleSystemModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(FoundryAssembliesPath)UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
     <Reference Include="mscorlib">
       <HintPath>$(FoundryAssembliesPath)mscorlib.dll</HintPath>
     </Reference>
