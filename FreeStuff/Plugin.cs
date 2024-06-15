@@ -17,7 +17,7 @@ namespace FreeStuff
             MODNAME = "FreeStuff",
             AUTHOR = "erkle64",
             GUID = AUTHOR + "." + MODNAME,
-            VERSION = "0.2.0";
+            VERSION = "0.2.1";
 
         public static LogSource log;
 
@@ -437,7 +437,7 @@ namespace FreeStuff
                         foreach (var kv in AssetManager.getAllAssetsOfType<CraftingRecipe>())
                         {
                             var recipe = kv.Value;
-                            if (recipe.outputElemental_data.Length == 0 && recipe.output_data.Length == 1)
+                            if (recipe.outputElemental_data.Length == 0 && recipe.output_data.Length == 1 && !recipe.isHiddenInCharacterCraftingFrame)
                             {
                                 if (items.TryGetValue(ItemTemplate.generateStringHash(recipe.output_data[0].identifier), out var item))
                                 {
